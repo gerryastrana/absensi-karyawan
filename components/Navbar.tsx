@@ -15,26 +15,23 @@ import {
   Users,
   LogOut,
   Menu,
-  X
+  X,
+  Award,
+  Building2,
+  Mail
 } from 'lucide-react';
 
 interface NavbarProps {
   currentUser: Employee;
-  employees: Employee[];
   activeTab: string;
   onTabChange: (tab: string) => void;
-  onUserChange: (user: Employee) => void;
-  onResetData: () => void;
   onLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
-  employees,
   activeTab,
   onTabChange,
-  onUserChange,
-  onResetData,
   onLogout,
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -93,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-2">
                 <span className="font-bold text-lg text-slate-800 tracking-tight">PresensiKu</span>
                 <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">
-                  Cloud Live
+                  Online
                 </span>
               </div>
               <p className="text-xs text-slate-500 hidden sm:block">Sistem Absensi GPS & Kamera Wajah</p>
@@ -109,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive
                       ? 'bg-sky-50 text-sky-700 shadow-xs border border-sky-100'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -122,7 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right Action: Digital Clock & User Switcher */}
+          {/* Right Action: Digital Clock & User Profile */}
           <div className="flex items-center gap-3">
             
             {/* Live Clock Badge */}
@@ -135,12 +132,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
-            {/* User Switcher Dropdown */}
+            {/* User Profile Popover */}
             <div className="relative">
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 className="flex items-center gap-2.5 p-1.5 pl-2.5 pr-2 rounded-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
-                title="Profil & Ganti Pengguna"
+                title="Profil Pengguna"
               >
                 <img
                   src={currentUser.avatar}
@@ -157,66 +154,61 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Pilih Akun Demo</p>
-                    <p className="text-xs text-slate-600 mt-0.5">Ganti role untuk mencoba fitur karyawan / HR:</p>
-                  </div>
-                  <div className="py-1 max-h-56 overflow-y-auto">
-                    {employees.map((emp) => (
-                      <button
-                        key={emp.id}
-                        onClick={() => {
-                          onUserChange(emp);
-                          setUserDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 flex items-center gap-3 hover:bg-slate-50 transition-colors ${
-                          emp.id === currentUser.id ? 'bg-sky-50/70 text-sky-700' : 'text-slate-700'
-                        }`}
-                      >
-                        <img
-                          src={emp.avatar}
-                          alt={emp.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold truncate">{emp.name}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{emp.department} • {emp.role.toUpperCase()}</p>
-                        </div>
-                        {emp.role === 'admin' && (
-                          <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">
-                            HR
-                          </span>
-                        )}
-                      </button>
-                    ))}
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  
+                  {/* User Profile Card */}
+                  <div className="px-4 pb-3 border-b border-slate-100 flex items-center gap-3">
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-11 h-11 rounded-full object-cover border border-slate-200"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate">{currentUser.name}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">{currentUser.nik}</p>
+                      <span className={`inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                        currentUser.role === 'admin' 
+                          ? 'bg-amber-100 text-amber-800' 
+                          : 'bg-sky-100 text-sky-800'
+                      }`}>
+                        {currentUser.role === 'admin' ? 'HR ADMINISTRATOR' : 'KARYAWAN'}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="border-t border-slate-100 mt-1 pt-1.5 px-3 space-y-1">
-                    <button
-                      onClick={() => {
-                        if (confirm('Kembalikan semua data ke pengaturan awal (default)?')) {
-                          onResetData();
-                          setUserDropdownOpen(false);
-                        }
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-50 rounded-lg transition"
-                    >
-                      Reset Data Demo
-                    </button>
-                    
-                    {/* Logout Button */}
+                  {/* Profile Details */}
+                  <div className="px-4 py-2.5 space-y-1.5 text-xs text-slate-600 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="truncate">{currentUser.department}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="truncate">{currentUser.email}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                        <Award className="w-3.5 h-3.5 text-amber-500" />
+                        Sisa Cuti:
+                      </span>
+                      <strong className="text-sky-700 font-mono">{currentUser.leaveBalance} Hari</strong>
+                    </div>
+                  </div>
+
+                  {/* Action Section */}
+                  <div className="pt-2 px-3">
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
                         onLogout();
                       }}
-                      className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-semibold flex items-center gap-2 transition"
+                      className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-xl font-semibold flex items-center gap-2 transition"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Keluar / Logout
+                      <LogOut className="w-4 h-4" />
+                      Keluar / Logout Akun
                     </button>
                   </div>
+
                 </div>
               )}
             </div>
@@ -266,7 +258,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50"
             >
               <LogOut className="w-5 h-5" />
-              Keluar / Logout
+              Keluar / Logout Akun
             </button>
           </div>
         </div>

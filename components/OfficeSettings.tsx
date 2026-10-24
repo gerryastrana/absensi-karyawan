@@ -182,7 +182,7 @@ export const OfficeSettings: React.FC<OfficeSettingsProps> = ({
             </div>
 
             <p className="text-[11px] text-sky-700">
-              💡 <em>Tips Uji Coba:</em> Klik tombol <strong>"Gunakan Koordinat GPS Saya Sekarang"</strong> agar kantor langsung ter-set di lokasi Anda saat ini, sehingga absensi Anda berstatus "Dalam Radius".
+              💡 <em>Petunjuk:</em> Klik tombol <strong>"Gunakan Koordinat GPS Saya Sekarang"</strong> jika Anda sedang berada di area kantor untuk menetapkan koordinat kantor secara otomatis sesuai titik GPS saat ini.
             </p>
           </div>
 

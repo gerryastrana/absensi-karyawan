@@ -24,7 +24,6 @@ interface AttendanceModalProps {
   existingRecord?: AttendanceRecord;
   onClose: () => void;
   onSubmit: (attendanceData: Partial<AttendanceRecord>) => void;
-  onUpdateOfficeToCurrentLocation?: (lat: number, lng: number) => void;
 }
 
 export const AttendanceModal: React.FC<AttendanceModalProps> = ({
@@ -36,7 +35,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   existingRecord,
   onClose,
   onSubmit,
-  onUpdateOfficeToCurrentLocation,
 }) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
@@ -191,14 +189,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }
   };
 
-  const handleQuickSetOfficeHere = () => {
-    if (coords && onUpdateOfficeToCurrentLocation) {
-      onUpdateOfficeToCurrentLocation(coords.lat, coords.lng);
-      setDistanceMeters(0);
-      setIsWithinRadius(true);
-    }
-  };
-
   const handleSubmit = () => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
@@ -315,7 +305,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                   <Camera className="w-10 h-10 mx-auto mb-2 text-rose-400" />
                   <p className="text-xs text-rose-300 font-medium">{cameraError}</p>
                   <p className="text-[11px] text-slate-400 mt-2">
-                    (Mode Dev / Simulasi: Anda tetap dapat melanjutkan absensi untuk pengujian)
+                    Izinkan akses kamera di peramban untuk mengambil foto selfie verifikasi kehadiran.
                   </p>
                   <button
                     onClick={startCamera}
@@ -423,17 +413,8 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                   <div className="flex-1">
                     <p className="font-semibold">Peringatan: Di Luar Radius Kantor</p>
                     <p className="text-[11px] text-amber-800 mt-0.5">
-                      Jarak Anda: <strong>{distanceMeters ?? '?'} meter</strong> (Batas kantor: {office.radiusMeters}m).
+                      Jarak Anda: <strong>{distanceMeters ?? '?'} meter</strong> dari {office.name} (Batas radius kantor: {office.radiusMeters}m). Kehadiran akan tercatat di luar area.
                     </p>
-                    {coords && onUpdateOfficeToCurrentLocation && (
-                      <button
-                        type="button"
-                        onClick={handleQuickSetOfficeHere}
-                        className="mt-2 text-[11px] text-sky-700 hover:text-sky-800 font-semibold underline block"
-                      >
-                        [Uji Coba Demo] Tetapkan lokasi saya saat ini sebagai kantor
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
@@ -461,12 +442,12 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!photoData && !cameraError}
+              disabled={!photoData}
               className={`flex-1 py-2.5 px-4 rounded-xl font-semibold text-white text-sm shadow-md transition flex items-center justify-center gap-2 ${
                 type === 'clockIn'
                   ? 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/25'
                   : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25'
-              } ${!photoData && !cameraError ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${!photoData ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <ShieldCheck className="w-4 h-4" />
               {type === 'clockIn' ? 'Konfirmasi Masuk' : 'Konfirmasi Pulang'}
