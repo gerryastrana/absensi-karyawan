@@ -1,0 +1,16 @@
+{
+  "name": "PresensiKu - Absensi Karyawan",
+  "short_name": "PresensiKu",
+  "description": "Aplikasi Web Absensi Karyawan dengan GPS Geofencing dan Kamera Selfie",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
