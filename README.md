@@ -31,19 +31,25 @@ Saat di-hosting di **Vercel**, server Next.js bersifat *Serverless* (tidak menyi
 
 2. **Buat Tabel Otomatis:**
    - Di dashboard Supabase, buka menu **"SQL Editor"** di bilah sisi kiri.
-   - Buka file [`database.sql`](file:///c:/Users/user/Documents/analisa%20kredit/database.sql) yang sudah kami sediakan di proyek ini, copy seluruh kodenya, dan paste ke dalam SQL Editor Supabase.
-   - Klik tombol **"Run"**. Seluruh tabel (Karyawan, Absensi, Cuti, Shift, Kantor) akan otomatis terbuat secara instan!
+   - Buka file [database.sql](file:///h:/My%20Drive/webproject/absensi-karyawan/database.sql) yang sudah kami sediakan di proyek ini, copy seluruh kodenya, dan paste ke dalam SQL Editor Supabase.
+   - Klik tombol **"Run"**. Seluruh tabel (Karyawan, Absensi, Cuti, Shift, Kantor) dan izin akses (RLS) akan otomatis terkonfigurasi.
 
-3. **Salin Kunci API ke Vercel:**
+3. **Hubungkan Kunci API ke Proyek:**
    - Di dashboard Supabase, buka menu **Project Settings (ikon Gerigi)** -> **API**.
    - Salin dua nilai berikut:
      - **Project URL**
      - **Project API Key (`anon` / `public`)**
-   - Buka dashboard proyek Anda di [vercel.com](https://vercel.com) ➔ pilih proyek Anda ➔ masuk ke menu **Settings** ➔ **Environment Variables**.
-   - Tambahkan dua variabel tersebut:
-     - `NEXT_PUBLIC_SUPABASE_URL` = `[URL Supabase Anda]`
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `[Kunci anon/public Supabase Anda]`
-   - Klik **Save** dan lakukan *Redeploy*.
+   - **Untuk Komputer Lokal (Localhost):**
+     - Buat file `.env.local` di folder utama aplikasi.
+     - Masukkan kredensial Anda:
+       ```env
+       NEXT_PUBLIC_SUPABASE_URL=https://[id-proyek].supabase.co
+       NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+       ```
+     - Restart terminal development (`npm run dev`). Di bilah navigasi atas akan muncul status hijau **"Supabase"**.
+   - **Untuk Hosting di Vercel:**
+     - Masuk ke dashboard proyek Vercel ➔ **Settings** ➔ **Environment Variables**.
+     - Tambahkan kedua variabel di atas lalu lakukan *Redeploy*.
 
 Sekarang setiap ada karyawan yang absen masuk/pulang, datanya langsung tersimpan permanen di cloud dan bisa dipantau langsung dari dashboard HR maupun dari web Supabase!
 

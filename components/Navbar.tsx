@@ -18,8 +18,11 @@ import {
   X,
   Award,
   Building2,
-  Mail
+  Mail,
+  Cloud,
+  Database
 } from 'lucide-react';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface NavbarProps {
   currentUser: Employee;
@@ -89,9 +92,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-lg text-slate-800 tracking-tight">PresensiKu</span>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">
-                  Online
-                </span>
+                {isSupabaseConfigured ? (
+                  <span 
+                    title="Terhubung ke Supabase Cloud PostgreSQL" 
+                    className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1 border border-emerald-200"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <Cloud className="w-3 h-3" /> Supabase
+                  </span>
+                ) : (
+                  <span 
+                    title="Supabase belum aktif di .env.local. Data disimpan di penyimpanan browser lokal." 
+                    className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1 border border-amber-200"
+                  >
+                    <Database className="w-3 h-3" /> Mode Lokal
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 hidden sm:block">Sistem Absensi GPS & Kamera Wajah</p>
             </div>

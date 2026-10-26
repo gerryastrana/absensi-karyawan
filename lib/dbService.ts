@@ -1,6 +1,12 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { Employee, Shift, OfficeLocation, AttendanceRecord, LeaveRequest } from './types';
 
+export interface DbResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: any;
+}
+
 export const dbService = {
   // 1. Fetch All Data from Supabase
   fetchAll: async () => {
@@ -8,11 +14,11 @@ export const dbService = {
 
     try {
       const [
-        { data: officeData },
-        { data: shiftsData },
-        { data: employeesData },
-        { data: attendancesData },
-        { data: leavesData },
+        { data: officeData, error: officeError },
+        { data: shiftsData, error: shiftsError },
+        { data: employeesData, error: employeesError },
+        { data: attendancesData, error: attendancesError },
+        { data: leavesData, error: leavesError },
       ] = await Promise.all([
         supabase.from('offices').select('*').limit(1).maybeSingle(),
         supabase.from('shifts').select('*').order('start_time'),
@@ -20,6 +26,22 @@ export const dbService = {
         supabase.from('attendances').select('*').order('created_at', { ascending: false }),
         supabase.from('leave_requests').select('*').order('created_at', { ascending: false }),
       ]);
+
+      if (employeesError) {
+        console.error('❌ Supabase error saat mengambil data karyawan:', employeesError);
+      }
+      if (shiftsError) {
+        console.error('❌ Supabase error saat mengambil data shift:', shiftsError);
+      }
+      if (officeError) {
+        console.error('❌ Supabase error saat mengambil data kantor:', officeError);
+      }
+      if (attendancesError) {
+        console.error('❌ Supabase error saat mengambil data absensi:', attendancesError);
+      }
+      if (leavesError) {
+        console.error('❌ Supabase error saat mengambil data cuti:', leavesError);
+      }
 
       return {
         office: officeData
@@ -102,16 +124,18 @@ export const dbService = {
         })),
       };
     } catch (err) {
-      console.warn('Error fetching data from Supabase:', err);
+      console.error('❌ Exception saat fetching data dari Supabase:', err);
       return null;
     }
   },
 
   // 2. Insert or Update Attendance Record
-  saveAttendance: async (record: AttendanceRecord) => {
-    if (!isSupabaseConfigured || !supabase) return;
+  saveAttendance: async (record: AttendanceRecord): Promise<DbResult> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: new Error('Supabase belum terkonfigurasi di environment') };
+    }
     try {
-      await supabase.from('attendances').upsert({
+      const { data, error } = await supabase.from('attendances').upsert({
         id: record.id,
         employee_id: record.employeeId,
         employee_name: record.employeeName,
@@ -136,17 +160,26 @@ export const dbService = {
         clock_out_status: record.clockOutStatus,
         overtime_hours: record.overtimeHours,
         notes: record.notes,
-      });
+      }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('❌ Supabase error saat menyimpan absensi:', error);
+        return { success: false, error };
+      }
+      return { success: true, data };
     } catch (err) {
-      console.warn('Error saving attendance to Supabase:', err);
+      console.error('❌ Exception saat menyimpan absensi ke Supabase:', err);
+      return { success: false, error: err };
     }
   },
 
   // 3. Insert or Update Leave Request
-  saveLeave: async (leave: LeaveRequest) => {
-    if (!isSupabaseConfigured || !supabase) return;
+  saveLeave: async (leave: LeaveRequest): Promise<DbResult> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: new Error('Supabase belum terkonfigurasi di environment') };
+    }
     try {
-      await supabase.from('leave_requests').upsert({
+      const { data, error } = await supabase.from('leave_requests').upsert({
         id: leave.id,
         employee_id: leave.employeeId,
         employee_name: leave.employeeName,
@@ -163,17 +196,26 @@ export const dbService = {
         reviewed_by: leave.reviewedBy,
         review_note: leave.reviewNote,
         reviewed_at: leave.reviewedAt,
-      });
+      }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('❌ Supabase error saat menyimpan pengajuan cuti:', error);
+        return { success: false, error };
+      }
+      return { success: true, data };
     } catch (err) {
-      console.warn('Error saving leave request to Supabase:', err);
+      console.error('❌ Exception saat menyimpan cuti ke Supabase:', err);
+      return { success: false, error: err };
     }
   },
 
-  // 4. Save Employee
-  saveEmployee: async (emp: Employee) => {
-    if (!isSupabaseConfigured || !supabase) return;
+  // 4. Save Employee (Insert or Update)
+  saveEmployee: async (emp: Employee): Promise<DbResult> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: new Error('Supabase belum terkonfigurasi di environment (.env.local)') };
+    }
     try {
-      await supabase.from('employees').upsert({
+      const { data, error } = await supabase.from('employees').upsert({
         id: emp.id,
         nik: emp.nik,
         name: emp.name,
@@ -183,30 +225,47 @@ export const dbService = {
         position: emp.position,
         role: emp.role,
         avatar: emp.avatar,
-        shift_id: emp.shiftId,
-        leave_balance: emp.leaveBalance,
-        phone: emp.phone,
-      });
+        shift_id: emp.shiftId || null,
+        leave_balance: emp.leaveBalance ?? 12,
+        phone: emp.phone || null,
+      }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('❌ Supabase error saat menyimpan karyawan:', error);
+        return { success: false, error };
+      }
+      return { success: true, data };
     } catch (err) {
-      console.warn('Error saving employee to Supabase:', err);
+      console.error('❌ Exception saat menyimpan karyawan ke Supabase:', err);
+      return { success: false, error: err };
     }
   },
 
   // 5. Delete Employee
-  deleteEmployee: async (id: string) => {
-    if (!isSupabaseConfigured || !supabase) return;
+  deleteEmployee: async (id: string): Promise<DbResult> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: new Error('Supabase belum terkonfigurasi di environment (.env.local)') };
+    }
     try {
-      await supabase.from('employees').delete().eq('id', id);
+      const { error } = await supabase.from('employees').delete().eq('id', id);
+      if (error) {
+        console.error('❌ Supabase error saat menghapus karyawan:', error);
+        return { success: false, error };
+      }
+      return { success: true };
     } catch (err) {
-      console.warn('Error deleting employee from Supabase:', err);
+      console.error('❌ Exception saat menghapus karyawan dari Supabase:', err);
+      return { success: false, error: err };
     }
   },
 
   // 6. Save Office Location
-  saveOffice: async (office: OfficeLocation) => {
-    if (!isSupabaseConfigured || !supabase) return;
+  saveOffice: async (office: OfficeLocation): Promise<DbResult> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: new Error('Supabase belum terkonfigurasi di environment') };
+    }
     try {
-      await supabase.from('offices').upsert({
+      const { data, error } = await supabase.from('offices').upsert({
         id: office.id,
         name: office.name,
         address: office.address,
@@ -214,15 +273,24 @@ export const dbService = {
         longitude: office.longitude,
         radius_meters: office.radiusMeters,
         is_default: office.isDefault,
-      });
+      }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('❌ Supabase error saat menyimpan lokasi kantor:', error);
+        return { success: false, error };
+      }
+      return { success: true, data };
     } catch (err) {
-      console.warn('Error saving office to Supabase:', err);
+      console.error('❌ Exception saat menyimpan kantor ke Supabase:', err);
+      return { success: false, error: err };
     }
   },
 
   // 7. Save Shifts
-  saveShifts: async (shifts: Shift[]) => {
-    if (!isSupabaseConfigured || !supabase) return;
+  saveShifts: async (shifts: Shift[]): Promise<DbResult> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: new Error('Supabase belum terkonfigurasi di environment') };
+    }
     try {
       const records = shifts.map((s) => ({
         id: s.id,
@@ -233,9 +301,16 @@ export const dbService = {
         color: s.color,
         description: s.description,
       }));
-      await supabase.from('shifts').upsert(records);
+      const { data, error } = await supabase.from('shifts').upsert(records, { onConflict: 'id' });
+      if (error) {
+        console.error('❌ Supabase error saat menyimpan shift:', error);
+        return { success: false, error };
+      }
+      return { success: true, data };
     } catch (err) {
-      console.warn('Error saving shifts to Supabase:', err);
+      console.error('❌ Exception saat menyimpan shifts ke Supabase:', err);
+      return { success: false, error: err };
     }
   },
 };
+

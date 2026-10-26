@@ -27,7 +27,7 @@ interface EmployeeManagementProps {
   employees: Employee[];
   shifts: Shift[];
   currentUserId: string;
-  onSaveEmployees: (employees: Employee[]) => void;
+  onSaveEmployees: (employees: Employee[], deletedEmployeeId?: string) => void | Promise<void>;
 }
 
 export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
@@ -188,7 +188,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
     }
     if (confirm('Yakin ingin menghapus data karyawan ini dari sistem?')) {
       const updated = employees.filter((e) => e.id !== id);
-      onSaveEmployees(updated);
+      onSaveEmployees(updated, id);
     }
   };
 

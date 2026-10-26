@@ -129,3 +129,25 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     review_note TEXT,
     reviewed_at TIMESTAMP WITH TIME ZONE
 );
+
+-- ========================================================
+-- 6. PENGATURAN HAK AKSES & ROW LEVEL SECURITY (RLS)
+-- PENTING: Jalankan bagian ini di SQL Editor Supabase agar
+-- aplikasi web (via anon/public key) dapat mengubah data
+-- seperti mengedit nama karyawan, clock in/out, dsb.
+-- ========================================================
+
+-- Nonaktifkan RLS agar operasi UPDATE/INSERT/DELETE tidak diblokir oleh Supabase
+ALTER TABLE offices DISABLE ROW LEVEL SECURITY;
+ALTER TABLE shifts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE employees DISABLE ROW LEVEL SECURITY;
+ALTER TABLE attendances DISABLE ROW LEVEL SECURITY;
+ALTER TABLE leave_requests DISABLE ROW LEVEL SECURITY;
+
+-- Berikan hak akses penuh kepada role anon dan authenticated
+GRANT ALL ON TABLE offices TO anon, authenticated, service_role;
+GRANT ALL ON TABLE shifts TO anon, authenticated, service_role;
+GRANT ALL ON TABLE employees TO anon, authenticated, service_role;
+GRANT ALL ON TABLE attendances TO anon, authenticated, service_role;
+GRANT ALL ON TABLE leave_requests TO anon, authenticated, service_role;
+

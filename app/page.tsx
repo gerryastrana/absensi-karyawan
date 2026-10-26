@@ -247,12 +247,10 @@ export default function Home() {
   };
 
   // Employee Management handler
-  const handleSaveEmployees = (updatedEmployees: Employee[]) => {
+  const handleSaveEmployees = async (updatedEmployees: Employee[], deletedEmployeeId?: string) => {
+    // Simpan dulu secara optimistik di state & local storage
     setEmployees(updatedEmployees);
     storage.saveEmployees(updatedEmployees);
-    
-    // Sync to Supabase
-    updatedEmployees.forEach((emp) => dbService.saveEmployee(emp));
 
     // Sync active user if updated
     const freshCurrentUser = updatedEmployees.find((e) => e.id === currentUser.id);
@@ -261,36 +259,121 @@ export default function Home() {
       setAuthUser(freshCurrentUser);
       storage.setAuthUser(freshCurrentUser);
     }
-    showToast('Data master karyawan berhasil diperbarui.');
+
+    // 1. Kasus Hapus Karyawan
+    if (deletedEmployeeId) {
+      if (isSupabaseConfigured) {
+        const delRes = await dbService.deleteEmployee(deletedEmployeeId);
+        if (delRes && !delRes.success) {
+          console.error('❌ Gagal menghapus karyawan dari Supabase:', delRes.error);
+          showToast(
+            `Karyawan dihapus di aplikasi, tapi gagal di Supabase: ${delRes.error?.message || 'Periksa RLS di Supabase'}`,
+            'error'
+          );
+          return;
+        }
+        showToast('Karyawan berhasil dihapus dari sistem & Supabase Cloud.');
+      } else {
+        showToast('Karyawan berhasil dihapus (Penyimpanan Lokal).');
+      }
+      return;
+    }
+
+    // 2. Kasus Tambah / Edit Karyawan
+    const modifiedOrNew = updatedEmployees.filter((newEmp) => {
+      const prev = employees.find((e) => e.id === newEmp.id);
+      if (!prev) return true; // Baru ditambah
+      return (
+        prev.name !== newEmp.name ||
+        prev.nik !== newEmp.nik ||
+        prev.email !== newEmp.email ||
+        prev.department !== newEmp.department ||
+        prev.position !== newEmp.position ||
+        prev.role !== newEmp.role ||
+        prev.shiftId !== newEmp.shiftId ||
+        prev.password !== newEmp.password ||
+        prev.leaveBalance !== newEmp.leaveBalance ||
+        prev.phone !== newEmp.phone ||
+        prev.avatar !== newEmp.avatar
+      );
+    });
+
+    if (isSupabaseConfigured) {
+      if (modifiedOrNew.length > 0) {
+        const results = await Promise.all(modifiedOrNew.map((emp) => dbService.saveEmployee(emp)));
+        const failed = results.find((r) => r && !r.success);
+
+        if (failed) {
+          console.error('❌ Gagal sinkronisasi karyawan ke Supabase:', failed.error);
+          showToast(
+            `Data tersimpan di aplikasi, tapi GAGAL di Supabase: ${failed.error?.message || 'Periksa RLS / Izin Supabase'}`,
+            'error'
+          );
+        } else {
+          showToast('Data master karyawan berhasil diperbarui di aplikasi & Supabase Cloud.');
+        }
+      } else {
+        showToast('Data master karyawan berhasil diperbarui.');
+      }
+    } else {
+      showToast('Data karyawan diperbarui (Mode Lokal. Konfigurasi .env.local untuk sync ke Supabase).');
+    }
   };
 
   // Shift & Office Save handlers
-  const handleSaveShifts = (updatedShifts: Shift[]) => {
+  const handleSaveShifts = async (updatedShifts: Shift[]) => {
     setShifts(updatedShifts);
     storage.saveShifts(updatedShifts);
-    dbService.saveShifts(updatedShifts);
-    showToast('Daftar shift berhasil disimpan.');
+    if (isSupabaseConfigured) {
+      const res = await dbService.saveShifts(updatedShifts);
+      if (res && !res.success) {
+        showToast(`Gagal simpan shift ke Supabase: ${res.error?.message}`, 'error');
+        return;
+      }
+      showToast('Daftar shift berhasil disimpan ke Supabase Cloud.');
+    } else {
+      showToast('Daftar shift berhasil disimpan.');
+    }
   };
 
-  const handleUpdateEmployeeShift = (employeeId: string, shiftId: string) => {
+  const handleUpdateEmployeeShift = async (employeeId: string, shiftId: string) => {
+    let updatedEmp: Employee | undefined;
     const updated = employees.map((emp) => {
       if (emp.id === employeeId) {
         const u = { ...emp, shiftId };
-        dbService.saveEmployee(u);
+        updatedEmp = u;
         return u;
       }
       return emp;
     });
     setEmployees(updated);
     storage.saveEmployees(updated);
-    showToast('Penugasan shift karyawan berhasil diperbarui.');
+
+    if (updatedEmp && isSupabaseConfigured) {
+      const res = await dbService.saveEmployee(updatedEmp);
+      if (res && !res.success) {
+        showToast(`Gagal sync shift ke Supabase: ${res.error?.message}`, 'error');
+        return;
+      }
+      showToast(`Shift untuk karyawan ${updatedEmp.name} berhasil diperbarui di Supabase.`);
+    } else {
+      showToast('Penugasan shift karyawan berhasil diperbarui.');
+    }
   };
 
-  const handleSaveOffice = (updatedOffice: OfficeLocation) => {
+  const handleSaveOffice = async (updatedOffice: OfficeLocation) => {
     setOffice(updatedOffice);
     storage.saveOffice(updatedOffice);
-    dbService.saveOffice(updatedOffice);
-    showToast('Pengaturan lokasi & geofence kantor berhasil disimpan.');
+    if (isSupabaseConfigured) {
+      const res = await dbService.saveOffice(updatedOffice);
+      if (res && !res.success) {
+        showToast(`Gagal simpan kantor ke Supabase: ${res.error?.message}`, 'error');
+        return;
+      }
+      showToast('Pengaturan kantor berhasil disimpan ke Supabase Cloud.');
+    } else {
+      showToast('Pengaturan lokasi & geofence kantor berhasil disimpan.');
+    }
   };
 
   if (!mounted) {
